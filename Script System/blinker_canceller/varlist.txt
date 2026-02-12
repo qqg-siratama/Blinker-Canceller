@@ -1,0 +1,2 @@
+bc_current_cam_position
+bc_previous_cam_position

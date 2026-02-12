@@ -1,0 +1,116 @@
+'##################################
+'#                                #
+'#    BLINKER CANCELLER SCRIPT    #
+'#                                #
+'##################################
+
+
+' Copyright (c) 2026 siratama
+'
+' Licensed under the Apache License, Version 2.0 (the "License");
+' you may not use this file except in compliance with the License.
+' You may obtain a copy of the License at
+'
+'   http://www.apache.org/licenses/LICENSE-2.0
+'
+' Unless required by applicable law or agreed to in writing, software
+' distributed under the License is distributed on an "AS IS" BASIS,
+' WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+' See the License for the specific language governing permissions and
+' limitations under the License.
+
+
+' @Summary
+' ウインカーキャンセラーカムの動作音を提供します.
+'
+' @Author  siratama
+' @Version 1.0
+'
+' @RevisionHistory
+' 2026/02/09 ver1.0 新規作成.
+
+
+'
+' @Summary
+' 初期化処理.
+'
+{macro:blinker_canceller_init}
+    0 (S.L.bc_previous_cam_position)
+{end}
+
+'
+' @Summary
+' カム位置を計算しカム音を再生します.
+' 
+{macro:blinker_canceller_frame}
+'   現在のカム位置を取得
+    (L.L.Axle_Steering_0_L) (M.L.steering_to_cam_position) (S.L.bc_current_cam_position)
+
+'   ウインカーが点灯中の場合
+    (L.L.lights_sw_blinker) 0 >
+    {if}
+'       カム位置の変化に応じてカム音を再生
+        (M.L.blinker_canceller_cam_sound)
+
+'       カム位置の変化に応じてウインカーを消灯
+        (M.L.blinker_canceller_apply_cancel)
+    {endif}
+
+'   カム位置を更新
+    (L.L.bc_current_cam_position) (S.L.bc_previous_cam_position)
+{end}
+
+'
+' @Summary
+' 現在のカム位置を計算します.
+'
+' @Input  [StackTop] ステアリング位置 (Axle_Steering_0_Lを参照のこと. 中央が0, 概ね-0.85から0.85の範囲内)
+' @Output [StackTop] 現在のカム位置
+'
+{macro:steering_to_cam_position}
+    (M.L.calculate_steering_rotation)
+    (C.L.bc_cancel_cam_lobe_interval) / trunc
+{end}
+
+'
+' @Summary
+' ステアリング回転角を計算します.
+'
+' @Input  [StackTop] ステアリング位置 (Axle_Steering_0_Lを参照のこと. 中央が0, 概ね-0.85から0.85の範囲内)
+' @Output [StackTop] ステアリング回転角
+'
+{macro:calculate_steering_rotation}
+    (C.L.bc_steering_rotation_scale) *
+{end}
+
+'
+' @Summary
+' カム位置の変化に応じてカム音再生イベントを発生させます.
+'
+{macro:blinker_canceller_cam_sound}
+    (L.L.bc_current_cam_position) (L.L.bc_previous_cam_position) = !
+    {if}
+        (T.L.ev_blinker_cam_position_changed)
+    {endif}
+{end}
+
+'
+' @Summary
+' カム位置の変化に応じてウインカーを消灯します.
+'
+{macro:blinker_canceller_apply_cancel}
+'   左折ウインカー点灯中で, ステアリングが右方向に回転しカム位置が変化した場合
+'   または
+'   右折ウインカー点灯中で, ステアリングが左方向に回転しカム位置が変化した場合
+    (L.L.lights_sw_blinker) 1 =
+    (L.L.bc_current_cam_position) (L.L.bc_previous_cam_position) >
+    &&
+    (L.L.lights_sw_blinker) 2 =
+    (L.L.bc_current_cam_position) (L.L.bc_previous_cam_position) <
+    &&
+    ||
+    {if}
+        (T.L.ev_lights_blinker_swoff)
+        0 (S.L.lights_sw_blinker)
+    {endif}
+{end}

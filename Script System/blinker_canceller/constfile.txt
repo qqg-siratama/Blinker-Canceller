@@ -1,0 +1,7 @@
+[const]
+bc_steering_rotation_scale
+1680
+
+[const]
+bc_cancel_cam_lobe_interval
+300
